@@ -2,9 +2,11 @@ import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 
 const getRequest = new EventEmitter();
+const postRequest = new EventEmitter();
 
-export async function getHandler (path, cb) {
-  getRequest.on(path, cb);
+export const handler = {
+  get: (path, cb) => { getRequest.on(path, cb); },
+  post: (path, cb) => { postRequest.on(path, cb); }
 }
 
 function cannotPerformOperation(req, res, statusCode=500) {
@@ -34,6 +36,17 @@ server.on('request', (req, res) => {
           return;
         }
         break;
+      case 'POST':
+        const body = Buffer.concat(payload).toString();
+        Object.assign(req, { body });
+        if(postRequest.listenerCount(req.url) > 0) {
+          postRequest.emit(req.url, req, res);
+        }
+        else {
+          cannotPerformOperation(req, res, 404);
+          return;
+        }
+        break;  
       default:
         cannotPerformOperation(req, res, 405);
         return;
