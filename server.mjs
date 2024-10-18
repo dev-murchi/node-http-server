@@ -1,4 +1,17 @@
 import { createServer } from 'node:http';
+import { EventEmitter } from 'node:events';
+
+const getRequest = new EventEmitter();
+
+export async function getHandler (path, cb) {
+  getRequest.on(path, cb);
+}
+
+function cannotPerformOperation(req, res, statusCode=500) {
+  res.statusCode = statusCode;
+  res.write(`Cannot ${req.method} ${req.url}`);
+  res.end();
+}
 
 export const server = createServer();
 
@@ -11,16 +24,19 @@ server.on('request', (req, res) => {
   let payload = [];
   req.on('data', (chunk) => payload.push(chunk));
   req.on('end', () => {
-    const { method } = req
-    const body = JSON.stringify({ msg: Buffer.concat(payload).toString() });
-    if(method === 'GET') {
-      res.statusCode = 200;
-      res.write(body);
-      res.end();
-    }
-    else {
-      res.statusCode = 405;
-      res.end();
+    switch(req.method) {
+      case 'GET':
+        if(getRequest.listenerCount(req.url) > 0) {
+          getRequest.emit(req.url, req, res);
+        }
+        else {
+          cannotPerformOperation(req, res, 404);
+          return;
+        }
+        break;
+      default:
+        cannotPerformOperation(req, res, 405);
+        return;
     }
   })
 });
