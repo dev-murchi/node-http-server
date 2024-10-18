@@ -1,0 +1,17 @@
+{
+  "name": "http-server",
+  "version": "1.0.0",
+  "description": "Simple HTTP Server",
+  "main": "server.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.mjs"
+  },
+  "keywords": [
+    "nodejs",
+    "http",
+    "http-server"
+  ],
+  "author": "Murat Cay",
+  "license": "MIT"
+}
