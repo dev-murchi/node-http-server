@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
+import { Buffer } from 'node:buffer';
 
 const getRequest = new EventEmitter();
 const postRequest = new EventEmitter();
@@ -9,7 +10,7 @@ export const handler = {
   post: (path, cb) => { postRequest.on(path, cb); }
 }
 
-function cannotPerformOperation(req, res, statusCode=500) {
+function cannotPerformOperation(req, res, statusCode = 500) {
   res.statusCode = statusCode;
   res.write(`Cannot ${req.method} ${req.url}`);
   res.end();
@@ -26,9 +27,10 @@ server.on('request', (req, res) => {
   let payload = [];
   req.on('data', (chunk) => payload.push(chunk));
   req.on('end', () => {
-    switch(req.method) {
+    const body = Buffer.concat(payload).toString();
+    switch (req.method) {
       case 'GET':
-        if(getRequest.listenerCount(req.url) > 0) {
+        if (getRequest.listenerCount(req.url) > 0) {
           getRequest.emit(req.url, req, res);
         }
         else {
@@ -37,16 +39,15 @@ server.on('request', (req, res) => {
         }
         break;
       case 'POST':
-        const body = Buffer.concat(payload).toString();
         Object.assign(req, { body });
-        if(postRequest.listenerCount(req.url) > 0) {
+        if (postRequest.listenerCount(req.url) > 0) {
           postRequest.emit(req.url, req, res);
         }
         else {
           cannotPerformOperation(req, res, 404);
           return;
         }
-        break;  
+        break;
       default:
         cannotPerformOperation(req, res, 405);
         return;

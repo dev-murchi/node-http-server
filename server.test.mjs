@@ -1,7 +1,9 @@
-import { describe, it, beforeEach, afterEach, before, after } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import { server, handler } from './server.mjs';
 import http from 'node:http';
 import assert from 'node:assert';
+import { Buffer } from 'node:buffer';
+
 const PROTOCOL = 'http://';
 const HOST_NAME = 'localhost';
 const PORT = 3030;
@@ -22,9 +24,9 @@ afterEach(async () => {
 });
 
 describe('Simple HTTP Server', () => {
-  it('should respond with 404 to GET Request', {skip: false}, async () => {
+  it('should respond with 404 to GET Request', { skip: false }, async () => {
     const response = await new Promise((resolve, reject) => {
-      http.get(`${PROTOCOL}${HOST_NAME}:${PORT}/invalid-path`, {agent: false}, (res) => {
+      http.get(`${PROTOCOL}${HOST_NAME}:${PORT}/invalid-path`, { agent: false }, (res) => {
         res.on('error', (err) => reject({ err }));
         let data = [];
         res.on('data', (chunk) => data.push(chunk));
@@ -41,7 +43,7 @@ describe('Simple HTTP Server', () => {
     assert.strictEqual(response.body, 'Cannot GET /invalid-path');
   });
 
-  it('should respond with 200 to GET Request', {skip: false}, async () => {
+  it('should respond with 200 to GET Request', { skip: false }, async () => {
     handler.get('/testing', (req, res) => {
       res.statusCode = 200;
       res.write('Testing...');
@@ -50,7 +52,7 @@ describe('Simple HTTP Server', () => {
 
     const response = await new Promise((resolve, reject) => {
 
-      http.get(`${PROTOCOL}${HOST_NAME}:${PORT}/testing`, {agent: false}, (res) => {
+      http.get(`${PROTOCOL}${HOST_NAME}:${PORT}/testing`, { agent: false }, (res) => {
         res.on('error', (err) => reject({ err }));
         let data = [];
         res.on('data', (chunk) => data.push(chunk));
@@ -67,7 +69,7 @@ describe('Simple HTTP Server', () => {
     assert.strictEqual(response.body, 'Testing...');
   });
 
-  it('should respond with 404 to POST Request', {skip: false}, async () => {
+  it('should respond with 404 to POST Request', { skip: false }, async () => {
     const response = await new Promise((resolve, reject) => {
       const options = {
         hostname: 'localhost',
@@ -76,7 +78,7 @@ describe('Simple HTTP Server', () => {
         method: 'POST',
         agent: false
       };
-  
+
       const req = http.request(options, (res) => {
         res.on('error', (err) => reject({ err }));
         let data = [];
@@ -88,16 +90,16 @@ describe('Simple HTTP Server', () => {
           });
         });
       });
-  
+
       req.on('error', (err) => reject({ err }));
       req.end('This is the body'); // Send body with the request
     });
 
-    assert.strictEqual(response.statusCode, 404); 
+    assert.strictEqual(response.statusCode, 404);
     assert.strictEqual(response.body, 'Cannot POST /invalid-path');
   });
 
-  it('should respond with 201 to POST Request', {skip: false}, async () => {
+  it('should respond with 201 to POST Request', { skip: false }, async () => {
 
     handler.post('/post-request', (req, res) => {
       const body = req.body
@@ -114,7 +116,7 @@ describe('Simple HTTP Server', () => {
         method: 'POST',
         agent: false
       };
-  
+
       const req = http.request(options, (res) => {
         res.on('error', (err) => reject({ err }));
         let data = [];
@@ -126,11 +128,11 @@ describe('Simple HTTP Server', () => {
           });
         });
       });
-  
+
       req.on('error', (err) => reject({ err }));
       req.end('This is the body');
     });
-    assert.strictEqual(response.statusCode, 201); 
+    assert.strictEqual(response.statusCode, 201);
     assert.strictEqual(response.body, 'This is the body');
   });
 

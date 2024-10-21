@@ -4,8 +4,10 @@
   "description": "Simple HTTP Server",
   "main": "server.mjs",
   "scripts": {
+    "pretest": "yarn run lint:check",
     "test": "node server.test.mjs",
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "lint:check": "eslint ."
   },
   "keywords": [
     "nodejs",
@@ -13,5 +15,11 @@
     "http-server"
   ],
   "author": "Murat Cay",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "eslint": "^9.13.0",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3"
+  }
 }
