@@ -3,137 +3,148 @@ import { server, handler } from './server.mjs';
 import http from 'node:http';
 import assert from 'node:assert';
 import { Buffer } from 'node:buffer';
-
-const PROTOCOL = 'http://';
-const HOST_NAME = 'localhost';
 const PORT = 3030;
 
-beforeEach(async () => {
-  await new Promise((resolve) => {
-    server.listen(PORT, () => {
-      console.log(`Listening on port ${PORT}`);
-      resolve();
-    });
-  });
-});
+const makeRequest = (options, payload) => {
+  return new Promise((resolve, reject) => {
+    if (options) {
+      const req = http.request(options);
+      req.on('error', (err) => reject({ error: err }));
+      req.on('response', (res) => {
+        let buf = [];
+        res.on('error', (err) => reject({ err }));
+        res.on('data', (chunk) => buf.push(chunk));
+        res.on('end', () => resolve({
+          statusCode: res.statusCode,
+          body: Buffer.concat(buf).toString()
+        }));
 
-afterEach(async () => {
-  await new Promise((resolve) => {
-    server.close(resolve);
+      });
+      if (payload) {
+        req.write(payload);
+      }
+      req.end();
+    }
+    else {
+      reject({ err: 'Missing request paramaters!' });
+    }
   });
-});
+}
+
 
 describe('Simple HTTP Server', () => {
-  it('should respond with 404 to GET Request', { skip: false }, async () => {
-    const response = await new Promise((resolve, reject) => {
-      http.get(`${PROTOCOL}${HOST_NAME}:${PORT}/invalid-path`, { agent: false }, (res) => {
-        res.on('error', (err) => reject({ err }));
-        let data = [];
-        res.on('data', (chunk) => data.push(chunk));
-        res.on('end', () => {
-          resolve({
-            statusCode: res.statusCode,
-            body: Buffer.concat(data).toString()
-          });
-        });
-      });
-    });
 
+  beforeEach(async () => {
+    await new Promise((resolve) => {
+      server.listen(PORT, 'localhost', () => {
+        resolve();
+      });
+
+    });
+  });
+
+  afterEach(async () => {
+    await new Promise((resolve) => {
+      server.close(resolve);
+    });
+  });
+
+  it('should respond with 404 to GET Request', { skip: false }, async () => {
+    const options = {
+      method: 'GET',
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test'
+    };
+    const response = await makeRequest(options);
     assert.strictEqual(response.statusCode, 404);
-    assert.strictEqual(response.body, 'Cannot GET /invalid-path');
+    assert.strictEqual(response.body, 'Cannot GET /test');
   });
 
   it('should respond with 200 to GET Request', { skip: false }, async () => {
-    handler.get('/testing', (req, res) => {
+    handler.get('/test', (req, res) => {
       res.statusCode = 200;
       res.write('Testing...');
       res.end();
     });
 
-    const response = await new Promise((resolve, reject) => {
+    const options = {
+      method: 'GET',
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test'
+    };
 
-      http.get(`${PROTOCOL}${HOST_NAME}:${PORT}/testing`, { agent: false }, (res) => {
-        res.on('error', (err) => reject({ err }));
-        let data = [];
-        res.on('data', (chunk) => data.push(chunk));
-        res.on('end', () => {
-          resolve({
-            statusCode: res.statusCode,
-            body: Buffer.concat(data).toString()
-          });
-        });
-      });
-    });
-
+    const response = await makeRequest(options);
     assert.strictEqual(response.statusCode, 200);
     assert.strictEqual(response.body, 'Testing...');
   });
 
   it('should respond with 404 to POST Request', { skip: false }, async () => {
-    const response = await new Promise((resolve, reject) => {
-      const options = {
-        hostname: 'localhost',
-        port: PORT,
-        path: '/invalid-path',
-        method: 'POST',
-        agent: false
-      };
-
-      const req = http.request(options, (res) => {
-        res.on('error', (err) => reject({ err }));
-        let data = [];
-        res.on('data', (chunk) => data.push(chunk));
-        res.on('end', () => {
-          resolve({
-            statusCode: res.statusCode,
-            body: Buffer.concat(data).toString()
-          });
-        });
-      });
-
-      req.on('error', (err) => reject({ err }));
-      req.end('This is the body'); // Send body with the request
-    });
-
+    const options = {
+      method: 'POST',
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test'
+    };
+    const response = await makeRequest(options, 'Test message...');
     assert.strictEqual(response.statusCode, 404);
-    assert.strictEqual(response.body, 'Cannot POST /invalid-path');
+    assert.strictEqual(response.body, 'Cannot POST /test');
   });
 
   it('should respond with 201 to POST Request', { skip: false }, async () => {
 
-    handler.post('/post-request', (req, res) => {
+    handler.post('/test', (req, res) => {
       const body = req.body
       res.statusCode = 201;
       res.write(body);
       res.end();
     });
 
-    const response = await new Promise((resolve, reject) => {
-      const options = {
-        hostname: 'localhost',
-        port: PORT,
-        path: '/post-request',
-        method: 'POST',
-        agent: false
-      };
-
-      const req = http.request(options, (res) => {
-        res.on('error', (err) => reject({ err }));
-        let data = [];
-        res.on('data', (chunk) => data.push(chunk));
-        res.on('end', () => {
-          resolve({
-            statusCode: res.statusCode,
-            body: Buffer.concat(data).toString()
-          });
-        });
-      });
-
-      req.on('error', (err) => reject({ err }));
-      req.end('This is the body');
-    });
+    const options = {
+      method: 'POST',
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test'
+    };
+    const response = await makeRequest(options, 'Post message...');
     assert.strictEqual(response.statusCode, 201);
-    assert.strictEqual(response.body, 'This is the body');
+    assert.strictEqual(response.body, 'Post message...');
+  });
+
+  it('should respond with 400 to POST Request when client error occured', { skip: false }, async () => {
+    const data = 'Test data';
+    const options = {
+      method: 'POST',
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test',
+      headers: {
+        'Conent-Type': 'text/plain',
+        'Content-Length': (Buffer.byteLength(data) - 1)
+      }
+    };
+
+    const response = await makeRequest(options, 'Test data');
+    assert.strictEqual(response.statusCode, 400);
+    assert.strictEqual(response.body, '{"err":"Bad Request"}');
+  });
+
+  it('should respond 417 to request when request contains "Expect" header rather than "100-continue"', { skip: false }, async () => {
+    const data = 'data';
+    const options = {
+      method: 'POST',
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test',
+      headers: {
+        'Conent-Type': 'text/plain',
+        'Expect': 'meow'
+      }
+    };
+    const response = await makeRequest(options, data);
+    assert.strictEqual(response.statusCode, 417);
+    assert.strictEqual(response.body, 'Expectation Failed!');
   });
 
 });
