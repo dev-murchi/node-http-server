@@ -12,45 +12,18 @@ const requestEmitters = {
   patch: new EventEmitter(),
 }
 
-export const handler = {
-  get: (path, cb) => {
-    if (path === '*') {
-      requestEmitters.get.removeAllListeners('*');
-    }
-    requestEmitters.get.on(path, cb);
-  },
-  post: (path, cb) => {
-    if (path === '*') {
-      requestEmitters.post.removeAllListeners('*');
-    }
-    requestEmitters.post.on(path, cb);
-  },
-  delete: (path, cb) => {
-    if (path === '*') {
-      requestEmitters.delete.removeAllListeners('*');
-    }
-    requestEmitters.delete.on(path, cb);
-  },
-  put: (path, cb) => {
-    if (path === '*') {
-      requestEmitters.put.removeAllListeners('*');
-    }
-    requestEmitters.put.on(path, cb);
-  },
-  patch: (path, cb) => {
-    if (path === '*') {
-      requestEmitters.patch.removeAllListeners('*');
-    }
-    requestEmitters.patch.on(path, cb);
-  },
+function addEventListener(emitter, path, cb) {
+  if (emitter.listenerCount(path) === 0) {
+    emitter.on(path, cb);
+  }
 }
 
-function setDefaultResponses() {
-  requestEmitters.get.on('*', (req, res) => { cannotPerformOperation(req, res) });
-  requestEmitters.post.on('*', (req, res) => { cannotPerformOperation(req, res) });
-  requestEmitters.delete.on('*', (req, res) => { cannotPerformOperation(req, res) });
-  requestEmitters.put.on('*', (req, res) => { cannotPerformOperation(req, res) });
-  requestEmitters.patch.on('*', (req, res) => { cannotPerformOperation(req, res) });
+export const handler = {
+  get: (path, cb) => { addEventListener(requestEmitters.get, path, cb) },
+  post: (path, cb) => { addEventListener(requestEmitters.post, path, cb) },
+  delete: (path, cb) => { addEventListener(requestEmitters.delete, path, cb) },
+  put: (path, cb) => { addEventListener(requestEmitters.put, path, cb) },
+  patch: (path, cb) => { addEventListener(requestEmitters.patch, path, cb) },
 }
 
 function cannotPerformOperation(req, res, statusCode = 404) {
@@ -58,26 +31,16 @@ function cannotPerformOperation(req, res, statusCode = 404) {
   res.end(`Cannot ${req.method} ${req.url}`);
 }
 
-setDefaultResponses();
-
 export const server = createServer();
 
 server.on('error', (err) => { console.error({ err: err.stack }); });
 
-server.on('close', () => {
-  Object.keys(requestEmitters).forEach(key => {
-    [...requestEmitters[key].eventNames()].forEach(event => {
-      requestEmitters[key].removeAllListeners(event);
-    })
-  });
-  setDefaultResponses();
-});
+server.on('close', () => { console.log('Server is closed') });
 
 server.on("checkExpectation", (req, res) => {
   res.statusCode = 417;
   res.end('Expectation Failed!');
 });
-
 
 server.on('clientError', (err, socket) => {
   socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
@@ -98,7 +61,12 @@ server.on('request', (req, res) => {
     if (requestEmitters[method]) {
       const count = requestEmitters[method].listenerCount(url.pathname);
       const event = (count) ? url.pathname : '*';
-      requestEmitters[method].emit(event, req, res);
+      if (event === '*' && (requestEmitters[method].listenerCount('*') === 0)) {
+        cannotPerformOperation(req, res, 404);
+      }
+      else {
+        requestEmitters[method].emit(event, req, res);
+      }
     }
     else {
       cannotPerformOperation(req, res, 405);
