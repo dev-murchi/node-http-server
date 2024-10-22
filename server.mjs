@@ -13,11 +13,36 @@ const requestEmitters = {
 }
 
 export const handler = {
-  get: (path, cb) => { requestEmitters.get.on(path, cb); },
-  post: (path, cb) => { requestEmitters.post.on(path, cb); },
-  delete: (path, cb) => { requestEmitters.delete.on(path, cb); },
-  put: (path, cb) => { requestEmitters.put.on(path, cb); },
-  patch: (path, cb) => { requestEmitters.put.on(path, cb); },
+  get: (path, cb) => {
+    if (path === '*') {
+      requestEmitters.get.removeAllListeners('*');
+    }
+    requestEmitters.get.on(path, cb);
+  },
+  post: (path, cb) => {
+    if (path === '*') {
+      requestEmitters.post.removeAllListeners('*');
+    }
+    requestEmitters.post.on(path, cb);
+  },
+  delete: (path, cb) => {
+    if (path === '*') {
+      requestEmitters.delete.removeAllListeners('*');
+    }
+    requestEmitters.delete.on(path, cb);
+  },
+  put: (path, cb) => {
+    if (path === '*') {
+      requestEmitters.put.removeAllListeners('*');
+    }
+    requestEmitters.put.on(path, cb);
+  },
+  patch: (path, cb) => {
+    if (path === '*') {
+      requestEmitters.patch.removeAllListeners('*');
+    }
+    requestEmitters.patch.on(path, cb);
+  },
 }
 
 function setDefaultResponses() {
