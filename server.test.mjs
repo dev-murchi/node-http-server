@@ -147,4 +147,47 @@ describe('Simple HTTP Server', () => {
     assert.strictEqual(response.body, 'Expectation Failed!');
   });
 
+  it('should respond with 404 to DELETE Request', { skip: false }, async () => {
+    const options = {
+      method: "DELETE",
+      hostname: "localhost",
+      port: PORT,
+      path: "/test/1",
+    };
+    const response = await makeRequest(options);
+    assert.strictEqual(response.statusCode, 404);
+    assert.strictEqual(response.body, "Cannot DELETE /test/1");
+  });
+
+  it('should respond with 404 to PUT Request', { skip: false }, async () => {
+    const options = {
+      method: 'PUT',
+      hostname: 'localhost',
+      path: '/test/1',
+      port: PORT
+    };
+    const payload = {
+      name: 'john',
+      lastname: 'doe',
+      mail: 'john.doe@email.com'
+    };
+    const response = await makeRequest(options, JSON.stringify(payload));
+    assert.strictEqual(response.statusCode, 404);
+    assert.strictEqual(response.body, 'Cannot PUT /test/1');
+  });
+
+  it('should respond with 404 to PATCH Request', { skip: false }, async () => {
+    const options = {
+      method: 'PATCH',
+      hostname: 'localhost',
+      path: '/test/1',
+      port: PORT
+    };
+    const payload = {
+      mail: 'john.doe@email.com'
+    };
+    const response = await makeRequest(options, JSON.stringify(payload));
+    assert.strictEqual(response.statusCode, 404);
+    assert.strictEqual(response.body, 'Cannot PATCH /test/1');
+  });
 });
