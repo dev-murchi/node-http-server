@@ -35,7 +35,15 @@ export const server = createServer();
 
 server.on('error', (err) => { console.error({ err: err.stack }); });
 
-server.on('close', () => { console.log('Server is closed') });
+server.on('close', () => {
+  console.log('Server is closed');
+  Object.keys(requestEmitters).forEach(key => {
+    [...requestEmitters[key].eventNames()].forEach(event => {
+      requestEmitters[key].removeAllListeners(event);
+    })
+  });
+
+});
 
 server.on("checkExpectation", (req, res) => {
   res.statusCode = 417;
