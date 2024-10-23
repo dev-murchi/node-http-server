@@ -190,4 +190,132 @@ describe('Simple HTTP Server', () => {
     assert.strictEqual(response.statusCode, 404);
     assert.strictEqual(response.body, 'Cannot PATCH /test/1');
   });
+
+  it('should respond with first request handler for requested endpoint of GET Request ', { skip: false }, async () => {
+    handler.get('/test', (req, res) => {
+      res.statusCode = 200;
+      res.write('First Handler');
+      res.end();
+    });
+
+    handler.get('/test', (req, res) => {
+      res.statusCode = 200;
+      res.write('Second Handler');
+      res.end();
+    });
+
+    const response = await makeRequest({
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test',
+      method: 'GET'
+    });
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(response.body, 'First Handler');
+  });
+
+  it('should respond with first request handler for requested endpoint of POST Request ', { skip: false }, async () => {
+    handler.post('/test', (req, res) => {
+      res.statusCode = 201;
+      res.write('First Handler');
+      res.end();
+    });
+
+    handler.post('/test', (req, res) => {
+      res.statusCode = 201;
+      res.write('Second Handler');
+      res.end();
+    });
+
+    const options = {
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test',
+      method: 'POST'
+    };
+
+    const response = await makeRequest(options, 'Post message...');
+
+    assert.strictEqual(response.statusCode, 201);
+    assert.strictEqual(response.body, 'First Handler');
+  });
+
+  it('should respond with first request handler for requested endpoint of DELETE Request ', { skip: false }, async () => {
+    handler.delete('/test/1', (req, res) => {
+      res.statusCode = 200;
+      res.write('First Handler');
+      res.end();
+    });
+
+    handler.delete('/test/1', (req, res) => {
+      res.statusCode = 200;
+      res.write('Second Handler');
+      res.end();
+    });
+
+    const options = {
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test/1',
+      method: 'DELETE'
+    };
+
+    const response = await makeRequest(options);
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(response.body, 'First Handler');
+  });
+
+  it('should respond with first request handler for requested endpoint of PUT Request ', { skip: false }, async () => {
+    handler.put('/test/1', (req, res) => {
+      res.statusCode = 201;
+      res.write('First Handler');
+      res.end();
+    });
+
+    handler.put('/test/1', (req, res) => {
+      res.statusCode = 201;
+      res.write('Second Handler');
+      res.end();
+    });
+
+    const options = {
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test/1',
+      method: 'PUT'
+    };
+
+    const response = await makeRequest(options, 'Put message...');
+
+    assert.strictEqual(response.statusCode, 201);
+    assert.strictEqual(response.body, 'First Handler');
+  });
+
+  it('should respond with first request handler for requested endpoint of PATCH Request ', { skip: false }, async () => {
+    handler.patch('/test/1', (req, res) => {
+      res.statusCode = 200;
+      res.write('First Handler');
+      res.end();
+    });
+
+    handler.patch('/test/1', (req, res) => {
+      res.statusCode = 200;
+      res.write('Second Handler');
+      res.end();
+    });
+
+    const options = {
+      hostname: 'localhost',
+      port: PORT,
+      path: '/test/1',
+      method: 'PATCH'
+    };
+
+    const response = await makeRequest(options, 'Patch message...');
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(response.body, 'First Handler');
+  });
 });
