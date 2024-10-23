@@ -62,7 +62,9 @@ server.on('request', (req, res) => {
   req.on('end', () => {
     Object.assign(req, { body: Buffer.concat(payload).toString() });
     const method = req.method.toLowerCase();
-    const url = new URL(`http://${process.env.HOST ?? 'localhost'}${req.url}`);
+    const address = server.address();
+    const url = new URL(`http://${process.env.HOST ?? 'localhost'}:${address.port}${req.url}`);
+    req.url = url;
 
     res.on('error', (err) => console.err('Server response error: ', err.message));
 
